@@ -26,7 +26,7 @@ class Chatbox_Left extends React.Component{
                 </div>
             
               )
-    }
+    } 
 }
 
 class Chatbox_Right extends React.Component{
@@ -35,8 +35,8 @@ class Chatbox_Right extends React.Component{
             <div class="chatbox_right">
                 <div class="container col-5 pb-2" style={{backgroundColor: "lightgrey"}}>
                     <div class="current_chat_header  row justify-content-center border-bottom border-dark position-fixed pt-2 pr-3 pb-3 align-items-center" style={{width:'41.68%',backgroundColor:'lightgrey'}}>
-                        <div class="col-3"><img style={{height:'90px',width:'100px',backgroundColor:'white'}}></img></div>
-                        <div class="col"><h4 stlye={{width:'100%'}}>Current Chat</h4></div>
+                        <div class="col-3 "><img style={{height:'90px',width:'100px',backgroundColor:'white'}}></img></div>
+                        <div class="col ml-3"><h4 stlye={{width:'100%'}}>Current Chat</h4></div>
                     </div>
                     <div class='current_chat_message_container' style={{paddingTop:'130px'}} >
                         <div class="current_chat_message border border-primary p-2 bg-info rounded-pill" > 1 Hi how are you doing</div>
