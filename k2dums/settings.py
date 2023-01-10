@@ -31,13 +31,14 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'corsheaders'
+    'chatrooms',
     'chat'
 
 ]
@@ -45,7 +46,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
+    # 'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     # 'django.middleware.csrf.CsrfViewMiddleware', Not being used in this app
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -71,6 +72,7 @@ TEMPLATES = [
         },
     },
 ]
+ASGI_APPLICATION='k2dums.routing.application'
 
 WSGI_APPLICATION = 'k2dums.wsgi.application'
 
@@ -123,8 +125,19 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
 STATIC_URL = '/static/'
-CORS_ORIGIN_AllOW_ALL=True #Will allow all the orgins to use the resource 
-# Default primary key field type
-# https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
+# CORS_ORIGIN_AllOW_ALL=True #Will allow all the orgins to use the resource 
+# # Default primary key field type
+# # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
+
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+#Rather than using redis , we create a inlayer memory Layer
+#deployment and scaling we use redis then
+CHANNEL_LAYERS={
+    'default':{
+        'BACKEND':'channels_redis.core.RedisChannelLayer',
+        'CONFIG':{
+            'hosts':[('127.0.0.1',6379)]
+        }
+    }
+}
