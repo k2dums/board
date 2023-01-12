@@ -3,8 +3,9 @@ from django.contrib.auth import authenticate,login,logout
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.contrib import messages
-from .models import User
+from .models import User,Message
 from django.db import IntegrityError
+from django.http import JsonResponse
 # Create your views here.
 def index_view(request):
     if not(request.user.is_authenticated):
@@ -58,3 +59,20 @@ def logout_view(request):
     logout(request)
     messages.info(request,'You have been logged out')
     return HttpResponseRedirect(reverse('chat:index'))
+
+
+
+# all the users that the  user  has a chatlog with
+def load_chatbox_withUsers(request):
+    pass
+
+#Load the chat , populate the window with the messages with the user in focus
+def load_chatbox_messages(request,username):
+    try:
+        user=User.objects.get(username=username)
+    except User.DoesNotExist:
+        return JsonResponse({'Error':'User Profile not found','status':404})
+    #Load all the messages with the user
+    if request.method=='GET':
+        chat_messages=Message.objects.filter(sender=request.user,receiver=user)
+        return JsonResponse([chat_message.serialize() for chat_message in chat_messages ],safe=False)
