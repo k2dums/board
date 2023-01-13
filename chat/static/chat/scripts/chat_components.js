@@ -2,8 +2,7 @@ class Chatbox_Left extends React.Component{
     render(){
         return(
                 <div id="chatbox_left"  >
-                    {/* <div class="chatbox_left" style={{backgroundColor: "lightgrey",height:'100%'}} > */}
-                  
+                    {/* <div class="chatbox_left" style={{backgroundColor: "lightgrey",height:'100%'}} > */} 
                         <div id='cb_left_header' style={{color: "black",top:'0',backgroundColor:'red',zIndex:'1'}} class="row justify-content-center position-sticky">
                             <div id='cb_left_title'></div><h1>Chatbox</h1>
                             
@@ -27,8 +26,7 @@ class Chatbox_Left extends React.Component{
                             </div>
                         </div>
                 </div>
-            
-              )
+                )
     } 
 }
 
@@ -42,7 +40,7 @@ class Chatbox_Right extends React.Component{
                         <div class="col " id='current_chat_header_title'><h4 >Current Chat</h4></div>
                     </div>
                 </div>
-             
+                xcxcv
 
             <div class='current_chat_message_container pl-3 pr-3 '  >
                 <ChatMessageSender text='1 Hi how are you doing'/>
@@ -57,7 +55,7 @@ class Chatbox_Right extends React.Component{
                 <ChatMessageReciever text='10 Hi how are you doing'/>
                 <ChatMessageSender text='11 I am doing well'/>
                 <ChatMessageReciever text='12 Hi how are you doing'/>
-                <ChatMessageSender text='13 I am doing well'/>
+                <ChatMessageSender text='15 I am doing well'/>
                 <ChatMessageReciever text='14 Hi how are you doing'/>
                 <ChatMessageSender text='15 I am doing well'/>
             </div>
@@ -93,8 +91,7 @@ class ChatMessageReciever extends React.Component{
                  <div class='d-inline-block  bg-info rounded-pill border border-info  p-2'>
                     <span class='message'>{this.props.text}</span>
                 </div>
-            </div>
-           
+            </div> 
         )
     }
 }
