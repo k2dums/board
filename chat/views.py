@@ -7,11 +7,15 @@ from .models import User,Message
 from django.db import IntegrityError
 from django.http import JsonResponse
 # Create your views here.
+
 def index_view(request):
+    return render(request,'chat/index.html')
+
+def profile_view(request,username):
     if not(request.user.is_authenticated):
         return HttpResponseRedirect(reverse('chat:login'))
 
-    return render(request,"chat/chat.html",{})
+    return render(request,"chat/chat.html",{'username':username,'users':users},)
 
 
 def register_view (request):
@@ -34,7 +38,7 @@ def register_view (request):
                 'messsage':'Username already taken'
             })
         login(request,user)
-        return HttpResponseRedirect(reverse('chat:index'))
+        return HttpResponseRedirect(reverse('chat:profile',kwargs={'username':request.user.username}))
 
     else:#For GET/PUT....
         return render(request,'chat/register.html',{})
@@ -48,7 +52,7 @@ def login_view(request):
 
         if user is not None:#Authenticated
             login(request,user)
-            return HttpResponseRedirect(reverse('chat:index'))
+            return HttpResponseRedirect(reverse('chat:profile',kwargs={'username':request.user.username}))
         
         else: #Not authenticated
             return render(request,'chat/login.html',{'message':'Invalid username or password'})
@@ -58,7 +62,7 @@ def login_view(request):
 def logout_view(request):
     logout(request)
     messages.info(request,'You have been logged out')
-    return HttpResponseRedirect(reverse('chat:index'))
+    return HttpResponseRedirect(reverse('chat:login'))
 
 
 
