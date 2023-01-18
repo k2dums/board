@@ -22,3 +22,6 @@ class Message(models.Model):
             'read':self.read,
             'archived':self.archived
         }
+
+    def __str__(self):
+        return f"Sender:{self.sender},Receiver:{self.receiver},message:{self.message}"
