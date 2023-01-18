@@ -9,6 +9,12 @@ https://docs.djangoproject.com/en/3.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.2/ref/settings/
 """
+import os
+db_user=os.environ.get('PostgreSql_username')
+db_pass=os.environ.get('PostgreSql_pass')
+db_host=os.environ.get('PostgreSql_host')
+db_port=os.environ.get('PostgreSql_port')
+
 
 from pathlib import Path
 
@@ -72,7 +78,7 @@ TEMPLATES = [
         },
     },
 ]
-ASGI_APPLICATION='k2dums.routing.application'
+ASGI_APPLICATION='k2dums.asgi.application'
 
 WSGI_APPLICATION = 'k2dums.wsgi.application'
 
@@ -81,10 +87,14 @@ WSGI_APPLICATION = 'k2dums.wsgi.application'
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+      'default': {
+       'ENGINE': 'django.db.backends.postgresql',
+       'NAME': 'Chatapp',
+       'USER': db_user,
+       'PASSWORD':db_pass,
+       'HOST': db_host,
+       'PORT':db_port,
+   }
 }
 
 
@@ -141,3 +151,4 @@ CHANNEL_LAYERS={
         }
     }
 }
+AUTH_USER_MODEL = 'chat.User'
