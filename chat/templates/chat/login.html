@@ -1,4 +1,4 @@
-<!-- {% load static %} -->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -12,7 +12,11 @@
     <script src="https://unpkg.com/babel-standalone@6.26.0/babel.js"></script>
 </head>
 <body>
-    <div id="root"></div>
-<script type="text/babel" src="../../static/chat/scripts/login.js"></script>
+    {{ message }}
+    <form method="post" action="{% url 'chat:login' %}"> 
+            <div id="root"></div>
+    </form>
+
+<script type="text/babel" src="../../static/chat/scripts/login_components.js"></script>
 </body>
 </html>
