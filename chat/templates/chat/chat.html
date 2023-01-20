@@ -12,47 +12,45 @@
     <script src="https://unpkg.com/react-dom@16.13.0/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/babel-standalone@6.26.0/babel.js"></script>
 </head>
-<body>
+<body style="background-color: rgb(125, 119, 119);">
     <script>
         const username="{{username}}"
     </script>
-    <div class="container pt-5 pb-5 " style="height:100%">
+    <div class="container pt-3 pb-3 " style="height:100%">
             <div class="row" style="height:100%">
 
 
-                <div  id="cb_left_container" class="col-3 pl-0 pr-0 " style=" background-color:pink; height:100%">
+                <div  id="cb_left_container" class="col-3 pl-0 pr-0" style=" background-color:rgb(149, 39, 177); height:100%; border-right:solid 1px black">
                     <div class="cb_left_headerUsers_container" style="height: 100%; overflow-x:hidden;" >
-                        <div id='cb_left_header' style="color:black;top:0;background-color:red;z-index:1;width:100%" class="justify-content-center position-absolute mb-2">
+                        <div id='cb_left_header' style="color:white;top:0;background-color:rgb(61, 37, 77);z-index:1;width:100%" class="justify-content-center position-absolute mb-2">
                             <div id='cb_left_title' class="row justify-content-center">
-                                <h1>{{username}}</h1>
+                                <h4>{{username}}</h4>
                             </div>
                         </div>
-                        <div class="chat_users pr-2 pl-3 pt-5 container " style="height:100%;overflow-x: hidden;" >
-                                {% for user in users %}
-                                <div id="chat_user"class=" row mt-3 mb-1 justify-content-center" >
-                                    <div   style="background-color: lightblue;" class="col-5 text-center">{{user}}</div>
-                                    <div   style='background-color: white;' class="col-5">Message... </div>
-                                </div>
-                                {% endfor %}
-                            </div>
+                        <div id="recent_chat_users" class="pr-2 pl-3 pt-5 container " style="height:100%;overflow-x: hidden;" >
+                        
+                        </div>
                     </div>
                 </div>
 
-                <div  id="cb_right_container" class="col-9 pl-0 pr-0" style=" background-color:green;height: 100%;">
+                <div  id="cb_right_container" class="col-9 pl-0 pr-0" style="height: 100%;">
     
                         <div id='cb_right_headerMessages_container' class=' pl-0 pr-0' style="background-color: yellow; height: 100%; min-height: inherit"> 
 
-                            <div id='cb_right_header' style="color:black;top:0;background-color:pink; width:100%;" class="position-absolute ">
-                                <div id='chatting_with_container' class="row justify-content-center">
-                                    <h1 id="chatting_with_user">Username</h1>
-                                </div>
+                            <div id='cb_right_header' style="color:white;top:0;background-color:rgb(61, 59, 59); width:100%;" class="position-absolute ">
+                                     <div id='chatting_with_container' class="row justify-content-center">
+                                    <h4 id="chatting_with_user">Username</h4>
+                                    </div>
+                            
                             </div>  
-                            <div id="chat_messages" class="overflow-auto pl-3 pr-3 pt-5 pb-5" style="background:green;height:100%; ">
+
+                            <div id="chat_messages" class="overflow-auto pl-3 pr-3 pt-5 pb-5" style="background:rgb(104, 103, 103);height:100%; ">
                             </div>
                         </div>  
-                        <footer id='current_chat_input_container' class=" position-relative" style="background-color:lightgrey;bottom:50px">
-                            <input id='current_chat_input' type="text" class='rounded' placeholder="Enter....." style="height:50px;width:100%;"></input>
-                      </footer> 
+
+                    <footer id='current_chat_input_container' class=" position-relative" style="background-color:lightgrey;bottom:50px">
+                        <input id='current_chat_input' type="text" class='rounded' placeholder="Enter....." style="height:50px;width:100%;"></input>
+                    </footer> 
                    
                 </div>
         </div>
