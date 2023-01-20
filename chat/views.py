@@ -6,16 +6,17 @@ from django.contrib import messages
 from .models import User,Message
 from django.db import IntegrityError
 from django.http import JsonResponse
+from django.db import connection
+from django.db.models import Q
 # Create your views here.
-
 def index_view(request):
     return render(request,'chat/index.html')
 
 def profile_view(request,username):
-    if not(request.user.is_authenticated):
+    if not(request.user.is_authenticated) or username!=request.user.username:
         return HttpResponseRedirect(reverse('chat:login'))
-
-    return render(request,"chat/chat.html",{'username':username,'users':users},)
+        
+    return render(request,"chat/chat.html",{'username':username})
 
 
 def register_view (request):
@@ -67,16 +68,60 @@ def logout_view(request):
 
 
 # all the users that the  user  has a chatlog with
-def load_chatbox_withUsers(request):
-    pass
+def load_recentChats_view(request,username):
+    if username!=request.user.username:
+        return JsonResponse({'Error':'Invalid Path'},status=400)
+    output=None
+    with connection.cursor() as cursor:
+        cursor.execute( ''' 
+select t.id as message_id,c.username,t.message,t.timestamp from chat_user as c
+join
+(Select t.withUser,m.message,m.id,m.timestamp from chat_message as m
+join(
+select withUser,max(latestMessage) as latestMessageBetweenUsers
+from (
+(select receiver_id as withUser ,max(timestamp) as latestMessage from chat_message where sender_id=%s group by receiver_id)
+UNION
+(select sender_id as withUser ,max(timestamp) as latestMessage from chat_message where receiver_id=%s group by sender_id)
+) as t group by t.withUser
+) as t
+on (t.withUser=m.receiver_id Or t.withUser=m.sender_id) and m.timestamp=t.latestMessageBetweenUsers
+where (m.receiver_id=%s or m.sender_id=%s)
+order by m.timestamp desc) as t
+on(t.withUser=c.id);
+                        ''',
+[request.user.id,request.user.id,request.user.id,request.user.id] )
+
+        row = cursor.fetchall()
+        output=serialize_recent_chats(row)
+    return JsonResponse(output,safe=False)
 
 #Load the chat , populate the window with the messages with the user in focus
-def load_chatbox_messages(request,username):
+def load_chat_messages_view(request,username,chatUser):
+    if username!=request.user.username:
+        return JsonResponse({'Error':'Invalid Path'},status=400)
     try:
-        user=User.objects.get(username=username)
+        user=User.objects.get(username=chatUser)
     except User.DoesNotExist:
         return JsonResponse({'Error':'User Profile not found','status':404})
     #Load all the messages with the user
     if request.method=='GET':
-        chat_messages=Message.objects.filter(sender=request.user,receiver=user)
+        chat_messages=Message.objects.filter( Q(sender=request.user,receiver=user)| Q(receiver=request.user,sender=user))
+        chat_messages=chat_messages.order_by('timestamp').all()
         return JsonResponse([chat_message.serialize() for chat_message in chat_messages ],safe=False)
+
+def serialize_recent_chats(rows):
+    output=[]
+    for row in rows:
+        output.append( 
+        {
+        'message_id':row[0],
+        'username':row[1],
+        'message':row[2],
+        'time':row[3],
+        }
+        )
+    return output
+            
+        
+
