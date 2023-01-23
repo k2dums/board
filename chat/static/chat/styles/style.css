@@ -6,3 +6,70 @@ body{
     min-height: 100%;
     height: 100%;
 }
+
+.chat_user{
+    min-height:80px;
+}
+.chat_user img{
+    height:60px;
+    width:60px;
+    border: 1px solid black;
+    border-radius:50%;
+    background-color: rgba(255, 255, 255, 0.805);
+}
+
+.user_message_container{
+    max-height: 80px;
+    min-height: 80px;
+    overflow-y: hidden;
+    border-top: 1px solid rgb(255, 255, 255);
+}
+
+.user_message_container .user_div{
+    padding-top:5px;
+    text-transform: capitalize;
+    font-weight: bold;
+    color:white;
+    font-size: 1rem;
+}
+
+.user_message_container .message_div{
+    font-weight:normal;
+    color: grey;
+    font-size: 1em;
+}
+
+
+.chat_receiver,.chat_sender .inner_chat{
+    color:white;
+}
+.chat_receiver .inner_chat{
+background-color: rgb(61, 59, 59);
+border: 1px solid rgb(61, 59, 59);
+border-radius:15px;
+}
+
+.chat_sender .inner_chat{
+    background-color: rgba(3, 102, 9, 0.467);
+    border: 1px solid rgba(3, 102, 9, 0.467);
+    border-radius:15px;
+}
+
+#current_chat_input_container{
+    border-top: 1px solid rgba(255, 255, 255, 0.432);
+    background-color: rgba(21, 21, 21, 0.953);
+    padding: 10px;
+}
+
+#current_chat_input_container #current_chat_input{
+border-radius: 50px;
+padding:20px;
+background-color: rgb(61, 59, 59);
+color:white;
+border: none;
+}
+
+
+#current_chat_input_container #current_chat_input:focus{
+    outline: none;
+}
