@@ -67,6 +67,26 @@ def logout_view(request):
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#-------------------------------------API CALLS----------------------------
+
 # all the users that the  user  has a chatlog with
 def load_recentChats_view(request,username):
     if username!=request.user.username:
@@ -74,7 +94,7 @@ def load_recentChats_view(request,username):
     output=None
     with connection.cursor() as cursor:
         cursor.execute( ''' 
-select t.id as message_id,c.username,t.message,t.timestamp from chat_user as c
+select t.id as message_id,c.username,c.id as user_id,t.message,t.timestamp from chat_user as c
 join
 (Select t.withUser,m.message,m.id,m.timestamp from chat_message as m
 join(
@@ -117,8 +137,9 @@ def serialize_recent_chats(rows):
         {
         'message_id':row[0],
         'username':row[1],
-        'message':row[2],
-        'time':row[3],
+        'user_id':row[2],
+        'message':row[3],
+        'time':row[4],
         }
         )
     return output
