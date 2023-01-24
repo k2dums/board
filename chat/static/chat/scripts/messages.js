@@ -1,9 +1,65 @@
 
+const wsUrl= 'ws://'+ window.location.host+ '/ws/chat/'+ user_id+ '/'
+const openSocket=(wsUrl,waitTimer,waitSeed,multiplier)=>{
+    let chatSocket=new WebSocket(wsUrl);
+    console.log(`trying to connect to :${chatSocket.url}`);
+
+    chatSocket.onopen=()=>{
+        console.log(`connection open to:${chatSocket.url}`);
+        waitTimer=waitSeed;
+
+        const chat_input=document.querySelector("#current_chat_input");
+        chat_input.addEventListener('keypress', (event)=>{
+        // event.keyCode or event.which  property will have the code of the pressed key
+        let keyCode = event.keyCode ? event.keyCode : event.which;
+        // 13 points the enter key
+        if(keyCode === 13) {
+          // call click function of the buttonn 
+          const message=document.querySelector("#current_chat_input").value;
+          let receiver=document.querySelector('#chatting_with_user').innerHTML;
+          let receiver_id=document.querySelector('#chatting_with_user').dataset.user_id;
+          data= {
+            'message':message,
+            'receiver':receiver,
+            'sender':username,
+            'receiver_id':receiver_id,
+            'sender_id':user_id,
+        };   
+        console.log('[SENDING]',data);
+          chatSocket.send(JSON.stringify(
+          data
+              ))
+            chat_input.value=""
+        }
+        });
+    };
+
+    chatSocket.onclose=()=>{
+        console.log(`connection closed to: ${chatSocket.url}`);
+        openSocket(wsUrl,waitTimer,waitSeed,multiplier)
+    }
+
+    chatSocket.onmessage=(e)=>{
+        const data=JSON.parse(e.data)
+        // display_message(data)
+        console.log('[RECEIVING]',data);
+        display_chat_messages(data);
+    }
+
+    chatSocket.onerror=()=>{
+        if(waitTimer<60000){
+            waitTimer=waitTimer*multiplier;
+        }
+        console.log(`error opening connection ${chatSocket.url}, next attempt in: ${waitTimer/1000} seconds`);
+        setTimeout(()=>{openSocket(ws.url,waitTimer,multiplier)},waitTimer)
+    
+        }
+}
+    
 
 document.addEventListener('DOMContentLoaded',()=>{
-
 getUsers();
-
+openSocket(wsUrl,1000,1000,2);
 });
 
 
@@ -11,15 +67,17 @@ getUsers();
    
 
 //function for displaying the message on the html element
-function display_message(data){
+function display_activeWindowMessage(data){
     const receiver=document.querySelector('#chatting_with_user').innerHTML
     if (data.sender==username && receiver==data.receiver){
-        var div=render_senderMessage(data.message)
+        var div=render_senderMessage(data.message);
+        document.querySelector('#chat_messages').append(div)
     }
-    else{
-        var div=render_receiverMessage(data.message)
+    else if (data.sender==receiver && username==data.receiver){
+        var div=render_receiverMessage(data.message);
+        document.querySelector('#chat_messages').append(div);
     }
-    const chat_container=document.querySelector('#chat_messages').append(div)
+    
 }
 
 
@@ -27,7 +85,7 @@ function render_senderMessage(data){
     const chat_sender=document.createElement('div');
     chat_sender.classList.add('chat_sender','mt-3','row','justify-content-end','mr-1');
     const inner_chat=document.createElement('div');
-    inner_chat.classList.add('d-inline-block','bg-success','rounded-pill','border','border-success','p-2');
+    inner_chat.classList.add('d-inline-block','p-2','inner_chat');
     const message=document.createElement('span');
     message.innerHTML=data;
     chat_sender.append(inner_chat);
@@ -39,7 +97,7 @@ function render_receiverMessage(data){
     const chat_sender=document.createElement('div');
     chat_sender.classList.add('chat_receiver','mt-3','mr-1');
     const inner_chat=document.createElement('div');
-    inner_chat.classList.add('d-inline-block',  'bg-info','rounded-pill','border','border-info','p-2');
+    inner_chat.classList.add('d-inline-block','p-2','inner_chat');
     const message=document.createElement('span');
     message.innerHTML=data;
     chat_sender.append(inner_chat);
@@ -54,121 +112,133 @@ function getUsers(){
     })
     .then(response=>response.json())
     .then(messages=>{
-        messages.forEach(message=>create_recentChatDiv(message,div));
+        messages.forEach(message=>create_appendRecentChatUser(message,div));
     });
 }
 
-
-function create_recentChatDiv(message,div){
-    document.querySelector('#chatting_with_container').style.display='none';
-    document.querySelector('#current_chat_input_container').style.display='none';
-    chat_user=document.createElement('div');
-    chat_user.classList.add('chat_user','row','mt-3','mb-1','justify-content-center');
-    chat_user.addEventListener('click',()=>{chatWithUser(message.username)})
-    user_div=document.createElement('div');
-    user_div.classList.add('col-5', 'text-center');
-    user_div.style.background='lightblue';
-    user_div.innerHTML=message.username;
-    message_div=document.createElement('div');
-    message_div.classList.add('col-5', 'text-center');
-    message_div.style.background='white';
-    message_div.innerHTML=message.message;
-    chat_user.append(user_div);
-    chat_user.append(message_div);
-    div.append(chat_user);
+function create_appendRecentChatUser(message,div){
+    node=create_recentChatUser(message);
+    div.append(node);
 }
 
-// //Recent Chat Users div
-// <div class="chat_user row mt-3 mb-1 justify-content-center" >
-//     <div   style="background-color: lightblue;" class="col-5 text-center">{{user}}</div>
-//     <div   style='background-color: white;' class="col-5">Message... </div>
-// </div> 
+
+function create_recentChatUser(message){
+    document.querySelector('#chatting_with_container').style.display='none';
+    document.querySelector('#current_chat_input_container').style.display='none';
+
+    let chat_user=document.createElement('div');
+    chat_user.classList.add('chat_user','row','mt-3','mb-1','align-items-center');
+    chat_user.addEventListener('click',()=>{chatWithUser(message.username,message.user_id)})
+    chat_user.dataset.user_id=message.user_id
+    chat_user.dataset.username=message.username
+
+    //Col 1 will have only image
+    let img_container=document.createElement('div');
+    img_container.classList.add('col-4','img_container');
+    let img_div=document.createElement('div');
+    img_div.classList.add('img_div','d-flex','justify-content-center',);
+    let img_pic=document.createElement('img');
+    img_div.append(img_pic);
+    img_container.append(img_div)
+    //----------------------------
+
+    //col 2 user and last message
+
+    
+    let user_message_container=document.createElement('div');
+    user_message_container.classList.add('col-7','user_message_container');
+
+    let user_div=document.createElement('div');
+    user_div.classList.add('user_div')
+    user_div.innerHTML=message.username
+    let message_div=document.createElement('div');
+    message_div.classList.add('message_div')
+    message_div.innerHTML=message.message
+
+    user_message_container.append(user_div);
+    user_message_container.append(message_div);
+    //--------------------------------------
+    chat_user.append(img_container);
+    chat_user.append(user_message_container);
+    return chat_user;
+}
 
 
-
-
-function chatWithUser(chatUser){
+function chatWithUser(chatUser,id){
 document.querySelector('#chatting_with_container').style.display='flex';
 document.querySelector('#current_chat_input_container').style.display='block';
 document.querySelector('#chat_messages').innerHTML=""
-document.querySelector('#chatting_with_user').innerHTML=chatUser
-const roomName='norbu'
-// const wsStart='ws://'
-// const loc=window.location.host
-// const path=`/ws/chat/${roomName}/`
-// const endpoint=wsStart+loc+path
 
-const chatSocket = new WebSocket(
-    'ws://'
-    + window.location.host
-    + '/ws/chat/'
-    + roomName
-    + '/'
-);
+let chatting_with_user=document.querySelector('#chatting_with_user')
+chatting_with_user.innerHTML=chatUser
+chatting_with_user.dataset.user_id=id
+chatting_with_user.dataset.username=chatUser
 
 
 fetch(`/chat/api/${username}/${chatUser}`)
 .then(response=>response.json())
 .then(messages=>{
     messages.forEach(message=>{
-        display_message(message);
+        display_activeWindowMessage(message);
     })
 })
-
-
-
-
-//When you get the message do this
-chatSocket.onmessage=function(e){
-        const data=JSON.parse(e.data)
-        // display_message(data)
-        console.log('I got a Data from server:',data);
-        display_message(data)
-};
-chatSocket.onopen=function(e){
-    console.log('websocket is ' + e.type);
 }
-//When the socket closes do this
-chatSocket.onclose=function(e){
-        console.error('Chat Socket closed unexpectedly')
-};
-const chat_input=document.querySelector("#current_chat_input")
-chat_input.addEventListener('keypress', (event)=>{
 
-    // event.keyCode or event.which  property will have the code of the pressed key
-    let keyCode = event.keyCode ? event.keyCode : event.which;
 
-    // 13 points the enter key
-    if(keyCode === 13) {
-      // call click function of the buttonn 
-      const message=document.querySelector("#current_chat_input").value
-      var receiver=document.querySelector('#current_chat_header_receiver').innerHTML
-      console.log('username:',username)
-      console.log('receiver:',receiver)
-      chatSocket.send(JSON.stringify(
-          {
-              'message':message,
-              'receiver':receiver,
-              'sender':username,
-          }
-          ))
-        chat_input.value=""
+function display_chat_messages(message){
+    let parentNode=document.querySelector("#recent_chat_users");
+    let target=null;
+    let firstChildElement=parentNode.firstElementChild;
+    let newnode=null;
+    //This block is for making changes in the recent chat users
+    {
+        if(user_id==message.receiver_id){
+            target=document.querySelector(`[data-user_id='${message.sender_id}']`);
+        }
+       else if (user_id==message.sender_id){
+            target=document.querySelector(`[data-user_id='${message.receiver_id}']`);
+       }
+        //if the node with the user_id is not present(not created) create the node
+        if(!target){
+            newnode=create_recentChatUser(message);
+            console.log('just created',newnode);
+            if (!firstChildElement){
+                //if no firstChildElement
+                parentNode.append(newnode);
+            }
+            else{
+                console.log('newnode',newnode);
+                parentNode.insertBefore(newnode,firstChildElement);
+            }
+        } 
+        else{//if target user_id is present then 
+            target.querySelector('.message_div').innerHTML=message.message //first change the text to latest text
+            if (!firstChildElement){//if no first child append
+                parentNode.append(target)
+            }
+            else{//if first child is present
+                if(target != firstChildElement){//if it is not the  first child change the position to the firstChild
+                    parentNode.insertBefore(target,firstChildElement);
+                 }
+            } 
+        }
     }
-      
-  });
+
+    //checking to the active user and making changes to active window
+    {
+        
+        let chatting_user_id=null
+        if(user_id==message.receiver_id){
+            chatting_user_id=message.sender_id;
+        }
+       else if (user_id==message.sender_id){
+            chatting_user_id=message.receiver_id;
+       }
+       chatting_with=document.querySelector('#chatting_with_user').dataset.user_id
+       if (chatting_with==chatting_user_id){
+        display_activeWindowMessage(message);
+       }
+       
+    }
+    
 }
-
-
-
-
-// <div class="chat_sender mt-3 mb-1 row justify-content-end mr-1 ">
-//     <div class='d-inline-block  bg-success rounded-pill border border-success  p-2 '>
-//        <span class='message '>{this.props.text}</span>
-//     </div>
-//  </div>
-
-//     <div class="chat_receiver mt-3 mb-1">
-//         <div class='d-inline-block  bg-info rounded-pill border border-info  p-2'>
-//            <span class='message'>{this.props.text1}</span>
-//        </div>
-//     </div>  
