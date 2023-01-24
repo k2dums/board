@@ -73,3 +73,7 @@ border: none;
 #current_chat_input_container #current_chat_input:focus{
     outline: none;
 }
+
+#chat_messages{
+    padding-bottom:calc(1rem*5);
+}
