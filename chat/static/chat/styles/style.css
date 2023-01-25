@@ -21,8 +21,8 @@ body{
 .user_message_container{
     max-height: 80px;
     min-height: 80px;
-    overflow-y: hidden;
     border-top: 1px solid rgb(255, 255, 255);
+    overflow: hidden;
 }
 
 .user_message_container .user_div{
@@ -37,6 +37,7 @@ body{
     font-weight:normal;
     color: grey;
     font-size: 1em;
+  
 }
 
 
