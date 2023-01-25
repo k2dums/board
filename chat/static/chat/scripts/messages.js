@@ -1,13 +1,56 @@
 
 const wsUrl= 'ws://'+ window.location.host+ '/ws/chat/'+ user_id+ '/'
+let chatSocket=null;
+// let flag=false;
+
 const openSocket=(wsUrl,waitTimer,waitSeed,multiplier)=>{
-    let chatSocket=new WebSocket(wsUrl);
+    chatSocket=new WebSocket(wsUrl);
     console.log(`trying to connect to :${chatSocket.url}`);
 
     chatSocket.onopen=()=>{
         console.log(`connection open to:${chatSocket.url}`);
         waitTimer=waitSeed;
+        flag=false;
+        onEnterKey(chatSocket)
 
+        
+    chatSocket.onmessage=(e)=>{
+        const data=JSON.parse(e.data)
+        console.log('[RECEIVING]',data);
+        display_chat_messages(data);
+    }
+    
+    chatSocket.onclose=()=>{
+        console.log(`connection closed to: ${chatSocket.url}`);
+        // if (!flag){
+            openSocket(wsUrl,waitTimer,waitSeed,multiplier)
+            // flag=true;
+        // }
+        }
+   
+    };
+   
+        chatSocket.onerror=()=>{
+            if(waitTimer<60000){
+                waitTimer=waitTimer*multiplier;
+            }
+            console.log(`error opening connection ${chatSocket.url}, next attempt in: ${waitTimer/1000} seconds`);
+            setTimeout(()=>{openSocket(wsUrl,waitTimer,waitSeed,multiplier)},waitTimer)
+         }
+ 
+}
+    
+
+
+document.addEventListener('DOMContentLoaded',()=>{
+getUsers();
+openSocket(wsUrl, 1000, 1000, 2)
+});
+
+
+        
+function onEnterKey(chatSocket){
+    if(chatSocket.readyState===WebSocket.OPEN){
         const chat_input=document.querySelector("#current_chat_input");
         chat_input.addEventListener('keypress', (event)=>{
         // event.keyCode or event.which  property will have the code of the pressed key
@@ -15,7 +58,7 @@ const openSocket=(wsUrl,waitTimer,waitSeed,multiplier)=>{
         // 13 points the enter key
         if(keyCode === 13) {
           // call click function of the buttonn 
-          const message=document.querySelector("#current_chat_input").value;
+          let message=document.querySelector("#current_chat_input").value;
           let receiver=document.querySelector('#chatting_with_user').innerHTML;
           let receiver_id=document.querySelector('#chatting_with_user').dataset.user_id;
           data= {
@@ -25,46 +68,25 @@ const openSocket=(wsUrl,waitTimer,waitSeed,multiplier)=>{
             'receiver_id':receiver_id,
             'sender_id':user_id,
         };   
-        console.log('[SENDING]',data);
-          chatSocket.send(JSON.stringify(
-          data
-              ))
-            chat_input.value=""
+            // try{ 
+                if (chatSocket.readyState===WebSocket.OPEN){
+                    console.log('[SENDING]',message,chatSocket); 
+                    chatSocket.send(JSON.stringify(data));
+                    chat_input.value="";
+                }
+                // else{//When reconnecting it seems there are two instances of websocket running causing problem
+                //     chatSocket.close();
+                // }  
+            // }
+            // catch(err){
+            //     console.log(err);
+            // }
+        
         }
         });
-    };
 
-    chatSocket.onclose=()=>{
-        console.log(`connection closed to: ${chatSocket.url}`);
-        openSocket(wsUrl,waitTimer,waitSeed,multiplier)
     }
-
-    chatSocket.onmessage=(e)=>{
-        const data=JSON.parse(e.data)
-        // display_message(data)
-        console.log('[RECEIVING]',data);
-        display_chat_messages(data);
-    }
-
-    chatSocket.onerror=()=>{
-        if(waitTimer<60000){
-            waitTimer=waitTimer*multiplier;
-        }
-        console.log(`error opening connection ${chatSocket.url}, next attempt in: ${waitTimer/1000} seconds`);
-        setTimeout(()=>{openSocket(ws.url,waitTimer,multiplier)},waitTimer)
-    
-        }
 }
-    
-
-document.addEventListener('DOMContentLoaded',()=>{
-getUsers();
-openSocket(wsUrl,1000,1000,2);
-});
-
-
-        
-   
 
 //function for displaying the message on the html element
 function display_activeWindowMessage(data){
@@ -242,3 +264,4 @@ function display_chat_messages(message){
     }
     
 }
+
