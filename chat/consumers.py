@@ -4,7 +4,7 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from .models import Message,User
 import logging
 
-logging.basicConfig(level=logging.ERROR)
+logging.basicConfig(level=logging.INFO)
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.room_name = self.scope["url_route"]["kwargs"]["room_name"]
@@ -28,11 +28,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
             receiver=text_data_json['receiver']
             receiver_id=text_data_json['receiver_id']
             sender_id=text_data_json['sender_id']
-            logging.info(f'[Received], data from {sender}')
+            output={'message':message,'sender':sender,'receiver':receiver,'receiver_id':receiver_id}
+            logging.info(f'[Received], {output} from {sender}')
         except Exception as e:
             logging.error(f'[Error-Receiving],Traceback: chat.consumer.recieve(),{e}')
 
-        logging.info({'message':message,'sender':sender,'receiver':receiver,'receiver_id':receiver_id})
+        # logging.info({'message':message,'sender':sender,'receiver':receiver,'receiver_id':receiver_id})
         receiver_obj=await self.get_user(receiver_id)
         other_room=''
         if receiver_obj:
@@ -74,7 +75,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         try:
             messg_obj=Message(sender=message['sender'],receiver=message['receiver'],message=message['message'])
             messg_obj.save()
-            logging.info(f"[Saved],data from {message['sender']}")
+            logging.info(f"[Saved],{message} from {message['sender']}")
         except Exception as e:
             logging.error(f'[Error-Saving message to database],Traceback: chat.consumers.save_message(),{e}')
 
