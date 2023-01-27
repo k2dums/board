@@ -16,6 +16,7 @@ urlpatterns=[
   #api route
   path('api/<str:username>',views.load_recentChats_view,name='recent_chats'),#chat/k2dums
   path('api/<str:username>/<str:chatUser>',views.load_chat_messages_view,name='chat_message'),
+  path('api/message/<int:message_id>/',views.message_view,name='message'),
 
 ]
 
