@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render,HttpResponse
 from django.contrib.auth import authenticate,login,logout
 from django.http import HttpResponseRedirect
 from django.urls import reverse
@@ -8,6 +8,7 @@ from django.db import IntegrityError
 from django.http import JsonResponse
 from django.db import connection
 from django.db.models import Q
+import json
 # Create your views here.
 def index_view(request):
     return render(request,'chat/index.html')
@@ -145,4 +146,29 @@ def serialize_recent_chats(rows):
     return output
             
         
+
+def message_view(request,message_id):
+    if request.method=='PUT':
+        try:
+            message=Message.objects.get(id=message_id)
+        except Exception as e:
+            return JsonResponse({'error':e},status=404)
+        data=json.loads(request.body)
+        changed_flag=False
+        if data.get('read') is not None:
+            message.read=data['read']
+            changed_flag=True
+        if data.get('received') is not None:
+            message.received=data['received']
+            changed_flag=True
+        if data.get('sent') is not None:
+            message.sent=data['sent']
+            changed_flag=True
+        if changed_flag:
+            message.save()
+        return HttpResponse(status=204)
+    else:
+        return JsonResponse({
+            "error": "Only PUT request accepted."
+        }, status=400)
 
