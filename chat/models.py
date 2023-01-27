@@ -10,18 +10,23 @@ class Message(models.Model):
     receiver=models.ForeignKey('User',on_delete=models.CASCADE,related_name='messages')
     message=models.TextField(blank=False)
     timestamp=models.DateTimeField(auto_now_add=True)
-    read=models.BooleanField(default=False)
-    archived=models.BooleanField(default=False)
+    received=models.BooleanField(default=False)#by the server
+    sent=models.BooleanField(default=False)#by the the server to the receiver
+    read=models.BooleanField(default=False)#by the receiver
+
+
 
     def serialize(self):
         return {
+            'id':self.id,
             'sender':self.sender.username,
             'receiver':self.receiver.username,
             'message':self.message,
             'timestamp':self.timestamp,
             'read':self.read,
-            'archived':self.archived
+            'received':self.received,
+            'sent':self.sent,
         }
 
     def __str__(self):
-        return f"Sender:{self.sender},Receiver:{self.receiver},message:{self.message}"
+        return f"message_id:{self.id},Sender:{self.sender},Receiver:{self.receiver},message:{self.message},received:{self.received},sent:{self.sent},read:{self.read}"
