@@ -21,7 +21,6 @@ body{
 .user_message_container{
     max-height: 80px;
     min-height: 80px;
-    border-top: 1px solid rgb(255, 255, 255);
     overflow: hidden;
 }
 
@@ -33,9 +32,12 @@ body{
     font-size: 1rem;
 }
 
+.user_message_container .message_div,.status_container
+{
+    color: grey;
+}
 .user_message_container .message_div{
     font-weight:normal;
-    color: grey;
     font-size: 1em;
   
 }
@@ -77,4 +79,17 @@ border: none;
 
 #chat_messages{
     padding-bottom:calc(1rem*5);
+}
+
+.unread{
+    border:1px solid green;
+    background-color:green;
+    color:white;
+    font-size:0.8rem;
+    font-weight: bold;
+    padding:0.3rem;
+}
+
+.user_message_unread_container{
+    border-top: 1px solid rgb(255, 255, 255);
 }
