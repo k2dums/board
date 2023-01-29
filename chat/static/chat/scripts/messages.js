@@ -90,41 +90,72 @@ function onEnterKey(chatSocket){
 
 //function for displaying the message on the html element
 function display_activeWindowMessage(data){
-    const receiver=document.querySelector('#chatting_with_user').innerHTML
+    const receiver_div=document.querySelector('#chatting_with_user')
+    const receiver=receiver_div.innerHTML
+
     if (data.sender==username && receiver==data.receiver){
-        var div=render_senderMessage(data.message);
-        document.querySelector('#chat_messages').append(div)
+        var div=render_senderMessage(data);
+        document.querySelector('#chat_messages').append(div);
+        // div.scrollIntoView({block: "start",behavior: "smooth"});//works for when you enter text also, also when last message was your message
     }
     else if (data.sender==receiver && username==data.receiver){
-        var div=render_receiverMessage(data.message);
+        var div=render_receiverMessage(data);
         document.querySelector('#chat_messages').append(div);
+    }
+    if (('first_unread' in receiver_div.dataset)){
+        first_unread=receiver_div.dataset.first_unread;
+        document.querySelector(`[data-message_id='${first_unread}']`).scrollIntoView({block:'center',behavior:'smooth'});
+        delete receiver_div.dataset.first_unread;
     }
     
 }
 
 
 function render_senderMessage(data){
+    if ( (data.sender!=username ) && !data.read )
+    {
+        fetch(`/chat/api/message/${data.id}/`,{
+            method:'PUT',
+            body:JSON.stringify({
+                read:true
+            })
+        })
+    }
+
+ 
     const chat_sender=document.createElement('div');
-    chat_sender.classList.add('chat_sender','mt-3','row','justify-content-end','mr-1');
-    const inner_chat=document.createElement('div');
-    inner_chat.classList.add('d-inline-block','p-2','inner_chat');
+    chat_sender.classList.add('message_container','sender','mt-3','row','justify-content-end','mr-1');
+    const message_div=document.createElement('div');
+    message_div.classList.add('message','d-inline-block','p-2');
+    message_div.dataset.message_id=data.id;
     const message=document.createElement('span');
-    message.innerHTML=data;
-    chat_sender.append(inner_chat);
-    inner_chat.append(message)
+    message.innerHTML=data.message;
+    chat_sender.append(message_div);
+    message_div.append(message)
     return chat_sender
 }
 
 function render_receiverMessage(data){
-    const chat_sender=document.createElement('div');
-    chat_sender.classList.add('chat_receiver','mt-3','mr-1');
-    const inner_chat=document.createElement('div');
-    inner_chat.classList.add('d-inline-block','p-2','inner_chat');
+    if ( (data.sender!=username ) && !data.read )
+    {
+        fetch(`/chat/api/message/${data.id}/`,{
+            method:'PUT',
+            body:JSON.stringify({
+                read:true
+            })
+        })
+    }
+
+    const chat_receiver=document.createElement('div');
+    chat_receiver.classList.add('message_container','receiver','mt-3','mr-1');
+    const message_div=document.createElement('div');
+    message_div.dataset.message_id=data.id;
+    message_div.classList.add('message','d-inline-block','p-2');
     const message=document.createElement('span');
-    message.innerHTML=data;
-    chat_sender.append(inner_chat);
-    inner_chat.append(message)
-    return chat_sender
+    message.innerHTML=data.message;
+    chat_receiver.append(message_div);
+    message_div.append(message)
+    return chat_receiver
 }
 
 function getUsers(){
@@ -150,43 +181,98 @@ function create_recentChatUser(message){
 
     let chat_user=document.createElement('div');
     chat_user.classList.add('chat_user','row','mt-3','mb-1','align-items-center');
-    chat_user.addEventListener('click',()=>{chatWithUser(message.username,message.user_id)})
+    chat_user.addEventListener('click',()=>{chatWithUser(chat_user,message.username,message.user_id)})
     chat_user.dataset.user_id=message.user_id
     chat_user.dataset.username=message.username
 
     //Col 1 will have only image
     let img_container=document.createElement('div');
-    img_container.classList.add('col-4','img_container');
+    img_container.classList.add('col-3','img_container','pr-0','d-inline-block','mr-2');
     let img_div=document.createElement('div');
-    img_div.classList.add('img_div','d-flex','justify-content-center',);
+    img_div.classList.add('img_div','d-inline-block');
     let img_pic=document.createElement('img');
     img_div.append(img_pic);
     img_container.append(img_div)
     //----------------------------
 
     //col 2 user and last message
+    let user_message_unread_container=document.createElement('div');
+    user_message_unread_container.classList.add('col-8','user_message_unread_container');
+    let user_message_unread_wrapper=document.createElement('div');
+    user_message_unread_wrapper.classList.add('user_message_unread_wrapper','row');
+
+
+   
+    
 
     
     let user_message_container=document.createElement('div');
-    user_message_container.classList.add('col-7','user_message_container');
+    user_message_container.classList.add('col','user_message_container','pr-1','pl-1');
 
     let user_div=document.createElement('div');
     user_div.classList.add('user_div')
     user_div.innerHTML=message.username
     let message_div=document.createElement('div');
-    message_div.classList.add('message_div')
+    message_div.classList.add('message_div',)
     message_div.innerHTML=message.message
+
+
+
+    let status_container=document.createElement('div');
+    status_container.classList.add('status_container','col-4','pl-0','pr-0','text-center');
+    let status_wrapper=document.createElement('div',);
+    status_wrapper.classList.add('status_wrapper','d-flex','col','flex-column','align-items-center','justify-content-end')
+    let time_count=document.createElement('div');
+    time_count.classList.add('time_count','pt-1');
+    let unread_count=document.createElement('div',);
+    unread_count.classList.add('unread_count','unread','rounded-circle','d-none');
+    let mute_icon=document.createElement('div');
+    mute_icon.classList.add('mute_icon');
+    // mute_icon.innerHTML='muted';
+    status_container.append(time_count);
+    status_container.append(status_wrapper);
+    status_wrapper.append(mute_icon);
+    status_wrapper.append(unread_count);
+    unread_count.dis
+    
+
+    date=getTime(message.time)
+    // unread_count.innerHTML=1000;
+    time_count.innerHTML=date;
 
     user_message_container.append(user_div);
     user_message_container.append(message_div);
+
+
+    user_message_unread_wrapper.append(user_message_container);
+    user_message_unread_wrapper.append(status_container);
+    user_message_unread_container.append(user_message_unread_wrapper);
     //--------------------------------------
+   
+  
     chat_user.append(img_container);
-    chat_user.append(user_message_container);
+    chat_user.append(user_message_unread_container);
+
     return chat_user;
 }
 
+function getTime(date){
+    let temp=new Date(date);
+    let hour=null
+    let min=temp.getMinutes();
+    min=min.toString().padStart(2,'0');
+    let ps='am';
+    if (temp.getHours()>12){
+        hour=temp.getHours()-12;
+        ps='pm';
+    }
+    return `${hour}:${min} ${ps}`;
+}
 
-function chatWithUser(chatUser,id){
+
+function chatWithUser(chat_with_userDiv,chatUser,id){
+console.log(chat_with_userDiv)
+chat_with_userDiv.querySelector('.unread_count').classList.add('d-none');
 document.querySelector('#chatting_with_container').style.display='flex';
 document.querySelector('#current_chat_input_container').style.display='block';
 document.querySelector('#chat_messages').innerHTML=""
@@ -207,6 +293,7 @@ fetch(`/chat/api/${username}/${chatUser}`)
 }
 
 
+//makes the changes to the chats 
 function display_chat_messages(message){
     let parentNode=document.querySelector("#recent_chat_users");
     let target=null;
@@ -231,10 +318,29 @@ function display_chat_messages(message){
             else{
                 console.log('newnode',newnode);
                 parentNode.insertBefore(newnode,firstChildElement);
+                if (message.unread!==null){
+                    if (message.unread.count>0){
+                        target.dataset.first_unread=message.unread.first_unreadId
+                    }
+                }
+
             }
         } 
         else{//if target user_id is present then 
             target.querySelector('.message_div').innerHTML=message.message //first change the text to latest text
+            target.querySelector('.time_count').innerHTML=getTime(message.time);
+            if(message.unread!=null){
+                if(target.dataset.user_id!=document.querySelector('#chatting_with_user').dataset.user_id){
+                    target.querySelector('.unread_count').classList.remove('d-none');
+                    target.querySelector('.unread_count').innerHTML=message.unread.count;
+                }
+            }
+            if (message.unread!==null){
+                if (message.unread.count>0){
+                    target.dataset.first_unread=message.unread.first_unreadId;
+                }
+            }
+          
             if (!firstChildElement){//if no first child append
                 parentNode.append(target)
             }
