@@ -4,7 +4,7 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from .models import Message,User
 import logging
 from django.db.models import Q
-
+import datetime
 logging.basicConfig(level=logging.INFO)
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -44,17 +44,18 @@ class ChatConsumer(AsyncWebsocketConsumer):
         sender_obj=await self.get_user(sender_id)
 
         # Send message to room group
-        saved_message_id=await self.save_message({'message':message,'receiver':receiver_obj,'sender':sender_obj})
-        
+        saved_message_id,saved_message_timestamp=await self.save_message({'message':message,'receiver':receiver_obj,'sender':sender_obj})
         #get number of unread messages
 
         first_unreadId,receiver_unreadCount=await self.get_unreadMessagesCount(sender_obj,receiver_obj)
+        time=str(saved_message_timestamp)
+        print(type(time))
         try:
             await self.channel_layer.group_send(
-            self.room_group_name,{'type':"chat_message","id":saved_message_id,"message":message,'sender':sender,'receiver':receiver,'receiver_id':receiver_id,'sender_id':sender_id}
+            self.room_group_name,{'type':"chat_message","id":saved_message_id,"message":message,'sender':sender,'receiver':receiver,'receiver_id':receiver_id,'sender_id':sender_id,'time':time}
             )
             await self.channel_layer.group_send(
-                other_room, {"type": "chat_message","id":saved_message_id,"message": message,'sender':sender,'receiver':receiver,'receiver_id':receiver_id,'sender_id':sender_id,'unread':{'count':receiver_unreadCount,'first_unreadId':first_unreadId}}
+                other_room, {"type": "chat_message","id":saved_message_id,"message": message,'sender':sender,'receiver':receiver,'receiver_id':receiver_id,'sender_id':sender_id,'time':time,'unread':{'count':receiver_unreadCount,'first_unreadId':first_unreadId}}
             )
         except Exception as e:
             logging.error(f'[Error-Sending Messages], Traceback: chat.consumer.recieve(), {e}')
@@ -77,6 +78,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'receiver_id':event['receiver_id'],
             'sender_id':event['sender_id'],
             'unread':event.get('unread'),
+            'time':event['time'],
             }
             if unread:
                 data['unread']=unread
@@ -98,7 +100,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             logging.info(f"[Saved],{message} from {message['sender']}")
         except Exception as e:
             logging.error(f'[Error-Saving message to database],Traceback: chat.consumers.save_message(),{e}')
-        return messg_obj.id
+        return messg_obj.id,messg_obj.timestamp
 
     @database_sync_to_async
     def get_unreadMessagesCount(self,sender,receiver):
