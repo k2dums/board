@@ -266,12 +266,16 @@ function create_recentChatUser(message){
 
 function getTime(date){
     let temp=new Date(date);
-    let hour=null
+    let hour=temp.getHours();
     let min=temp.getMinutes();
     min=min.toString().padStart(2,'0');
     let ps='am';
-    if (temp.getHours()>12){
-        hour=temp.getHours()-12;
+    console.log(hour)
+    if (hour==0){
+        hour=12;
+    }
+    if (hour>12){
+        hour=hour-12;
         ps='pm';
     }
     return `${hour}:${min} ${ps}`;
