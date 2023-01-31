@@ -165,6 +165,7 @@ function getUsers(){
     })
     .then(response=>response.json())
     .then(messages=>{
+        console.log('[Received GetUser]',messages)
         messages.forEach(message=>create_appendRecentChatUser(message,div));
     });
 }
@@ -184,6 +185,7 @@ function create_recentChatUser(message){
     chat_user.addEventListener('click',()=>{chatWithUser(chat_user,message.username,message.user_id)})
     chat_user.dataset.user_id=message.user_id
     chat_user.dataset.username=message.username
+  
 
     //Col 1 will have only image
     let img_container=document.createElement('div');
@@ -252,6 +254,12 @@ function create_recentChatUser(message){
   
     chat_user.append(img_container);
     chat_user.append(user_message_unread_container);
+
+    if(message.unread!=null){
+        chat_user.querySelector('.unread_count').classList.remove('d-none');
+        chat_user.querySelector('.unread_count').innerHTML=message.unread.count;
+        chat_user.dataset.first_unread=message.unread.first_unreadId;
+    }
 
     return chat_user;
 }
@@ -333,13 +341,14 @@ function display_chat_messages(message){
                 if(target.dataset.user_id!=document.querySelector('#chatting_with_user').dataset.user_id){
                     target.querySelector('.unread_count').classList.remove('d-none');
                     target.querySelector('.unread_count').innerHTML=message.unread.count;
-                }
-            }
-            if (message.unread!==null){
-                if (message.unread.count>0){
                     target.dataset.first_unread=message.unread.first_unreadId;
                 }
             }
+            // if (message.unread!==null){
+            //     if (message.unread.count>0){
+            //         target.dataset.first_unread=message.unread.first_unreadId;
+            //     }
+            // }
           
             if (!firstChildElement){//if no first child append
                 parentNode.append(target)
