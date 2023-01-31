@@ -115,32 +115,30 @@ on(t.withUser=c.id)
 ) as latestMessageTable
 left JOIN
 (  
-Select m.user_id,m.unread,t.first_unread from 
-(select user_id,count(read) as unread from
-(select receiver_id as user_id ,message,read from chat_message where sender_id=%s
-union
-select sender_id as user_id,message,read from chat_message where receiver_id=%s
+select UnreadCountTable.user_id,UnreadCountTable.unread,FirstUnreadTable.first_unread from 
+(Select user_id,count(read) as unread from
+(
+select sender_id as user_id ,message,read from chat_message where receiver_id=%s
 ) as t
 where read=false
-group by user_id) as m
+group by user_id) as UnreadCountTable
 JOIN
-(select m.id as first_unread,t.user_id from chat_message as m
-join 
-(select user_id,min(timestamp) as first_unread
-from(select receiver_id as user_id ,message,read,timestamp from chat_message where sender_id=%s
-union select sender_id as user_id,message,read,timestamp from chat_message where receiver_id=%s
-) as t
-where read=false
-group by user_id)as t
-on (t.user_id=m.receiver_id Or t.user_id=m.sender_id) and m.timestamp=t.first_unread
-where (m.receiver_id=%s or m.sender_id=%s)
-) as t
-on (m.user_id=t.user_id)
-) as unreadTable
+(
+Select m.id as first_unread,InnerFirstUnreadTable.user_id from chat_message as m
+join(
+select user_id,min(timestamp) as first_unread
+from (select sender_id as user_id,message,read,timestamp from chat_message where receiver_id=%s) as t
+group by user_id
+) as InnerFirstUnreadTable
+on (InnerFirstUnreadTable.user_id=m.sender_id) and m.timestamp=InnerFirstUnreadTable.first_unread
+where (m.receiver_id=3)
+) as FirstUnreadTable
+on (UnreadCountTable.user_id=FirstUnreadTable.user_id)) as unreadTable
 on (latestMessageTable.user_id=unreadTable.user_id);
 
+
                         ''',
-[request.user.id,request.user.id,request.user.id,request.user.id,request.user.id,request.user.id,request.user.id,request.user.id,request.user.id,request.user.id,] )
+[request.user.id,request.user.id,request.user.id,request.user.id,request.user.id,request.user.id,] )
 
         row = cursor.fetchall()
         output=serialize_recent_chats(row)
