@@ -95,6 +95,8 @@ def load_recentChats_view(request,username):
     output=None
     with connection.cursor() as cursor:
         cursor.execute( ''' 
+select message_id as latestMessageId,username,latestMessagetable.user_id,message as latestMessageWithUser,timestamp,unread as unreadMessagesWithUser,first_unread as first_unread_messageID from 
+(
 select t.id as message_id,c.username,c.id as user_id,t.message,t.timestamp from chat_user as c
 join
 (Select t.withUser,m.message,m.id,m.timestamp from chat_message as m
@@ -109,9 +111,36 @@ UNION
 on (t.withUser=m.receiver_id Or t.withUser=m.sender_id) and m.timestamp=t.latestMessageBetweenUsers
 where (m.receiver_id=%s or m.sender_id=%s)
 order by m.timestamp desc) as t
-on(t.withUser=c.id);
+on(t.withUser=c.id)
+) as latestMessageTable
+left JOIN
+(  
+Select m.user_id,m.unread,t.first_unread from 
+(select user_id,count(read) as unread from
+(select receiver_id as user_id ,message,read from chat_message where sender_id=%s
+union
+select sender_id as user_id,message,read from chat_message where receiver_id=%s
+) as t
+where read=false
+group by user_id) as m
+JOIN
+(select m.id as first_unread,t.user_id from chat_message as m
+join 
+(select user_id,min(timestamp) as first_unread
+from(select receiver_id as user_id ,message,read,timestamp from chat_message where sender_id=%s
+union select sender_id as user_id,message,read,timestamp from chat_message where receiver_id=%s
+) as t
+where read=false
+group by user_id)as t
+on (t.user_id=m.receiver_id Or t.user_id=m.sender_id) and m.timestamp=t.first_unread
+where (m.receiver_id=%s or m.sender_id=%s)
+) as t
+on (m.user_id=t.user_id)
+) as unreadTable
+on (latestMessageTable.user_id=unreadTable.user_id);
+
                         ''',
-[request.user.id,request.user.id,request.user.id,request.user.id] )
+[request.user.id,request.user.id,request.user.id,request.user.id,request.user.id,request.user.id,request.user.id,request.user.id,request.user.id,request.user.id,] )
 
         row = cursor.fetchall()
         output=serialize_recent_chats(row)
@@ -141,6 +170,7 @@ def serialize_recent_chats(rows):
         'user_id':row[2],
         'message':row[3],
         'time':row[4],
+        'unread':None if row[5]==None and row[6]==None else {'count':row[5],'first_unreadId':row[6]},
         }
         )
     return output
