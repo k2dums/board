@@ -134,7 +134,8 @@ on (InnerFirstUnreadTable.user_id=m.sender_id) and m.timestamp=InnerFirstUnreadT
 where (m.receiver_id=3)
 ) as FirstUnreadTable
 on (UnreadCountTable.user_id=FirstUnreadTable.user_id)) as unreadTable
-on (latestMessageTable.user_id=unreadTable.user_id);
+on (latestMessageTable.user_id=unreadTable.user_id)
+order by timestamp desc;
 
 
                         ''',
