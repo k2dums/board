@@ -5,14 +5,14 @@ body,html{
 body{
     min-height: 100%;
     height: 100%;
+    min-width:576px;
 }
-
 .chat_user{
     min-height:80px;
 }
 .chat_user img{
-    height:60px;
-    width:60px;
+    height:3.8em;
+    width:3.8em;
     border: 1px solid black;
     border-radius:50%;
     background-color: rgba(255, 255, 255, 0.805);
@@ -42,6 +42,9 @@ body{
   
 }
 
+.message_container{
+    border-radius:15px;
+}
 
 .receiver,.sender .message{
     color:white;
@@ -93,3 +96,13 @@ border: none;
 .user_message_unread_container{
     border-top: 1px solid rgb(255, 255, 255);
 }
+
+@media screen and (max-width:992px){
+    .chat_user img{
+        height:2.9em;
+        width:2.9em;
+    }
+    
+    
+}
+
