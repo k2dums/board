@@ -1,5 +1,6 @@
+let enterKeyPress=false;
 
-const wsUrl= 'ws://'+ window.location.host+ '/ws/chat/'+ user_id+ '/'
+const wsUrl= 'ws://'+ window.location.host+ '/ws/chat/'+ user_id+ '/';
 let chatSocket=null;
 // let flag=false;
 
@@ -57,7 +58,8 @@ function onEnterKey(chatSocket){
         let keyCode = event.keyCode ? event.keyCode : event.which;
         // 13 points the enter key
         if(keyCode === 13) {
-          // call click function of the buttonn 
+          // call click function of the button
+          enterKeyPress=true;
           let message=document.querySelector("#current_chat_input").value;
           let receiver=document.querySelector('#chatting_with_user').innerHTML;
           let receiver_id=document.querySelector('#chatting_with_user').dataset.user_id;
@@ -89,23 +91,22 @@ function onEnterKey(chatSocket){
 }
 
 //function for displaying the message on the html element
-function display_activeWindowMessage(data){
+function display_activeWindowMessage(data,){
     const receiver_div=document.querySelector('#chatting_with_user')
     const receiver=receiver_div.innerHTML
-
+    const chat_messages_div=document.querySelector('#chat_messages');
     if (data.sender==username && receiver==data.receiver){
         var div=render_senderMessage(data);
-        document.querySelector('#chat_messages').append(div);
+        chat_messages_div.append(div);
         // div.scrollIntoView({block: "start",behavior: "smooth"});//works for when you enter text also, also when last message was your message
+        if(enterKeyPress){
+            div.scrollIntoView({block: "start",behavior: "smooth"});
+            enterKeyPress=false;
+        }
     }
     else if (data.sender==receiver && username==data.receiver){
         var div=render_receiverMessage(data);
-        document.querySelector('#chat_messages').append(div);
-    }
-    if (('first_unread' in receiver_div.dataset)){
-        first_unread=receiver_div.dataset.first_unread;
-        document.querySelector(`[data-message_id='${first_unread}']`).scrollIntoView({block:'center',behavior:'smooth'});
-        delete receiver_div.dataset.first_unread;
+        chat_messages_div.append(div);
     }
     
 }
@@ -270,7 +271,6 @@ function getTime(date){
     let min=temp.getMinutes();
     min=min.toString().padStart(2,'0');
     let ps='am';
-    console.log(hour)
     if (hour==0){
         hour=12;
     }
@@ -282,12 +282,13 @@ function getTime(date){
 }
 
 
-function chatWithUser(chat_with_userDiv,chatUser,id){
-console.log(chat_with_userDiv)
-chat_with_userDiv.querySelector('.unread_count').classList.add('d-none');
+function chatWithUser(chat_userDiv,chatUser,id){
+console.log(chat_userDiv)
+chat_userDiv.querySelector('.unread_count').classList.add('d-none');
 document.querySelector('#chatting_with_container').style.display='flex';
 document.querySelector('#current_chat_input_container').style.display='block';
-document.querySelector('#chat_messages').innerHTML=""
+const chat_messages_div=document.querySelector('#chat_messages');
+chat_messages_div.innerHTML="";
 
 let chatting_with_user=document.querySelector('#chatting_with_user')
 chatting_with_user.innerHTML=chatUser
@@ -302,6 +303,17 @@ fetch(`/chat/api/${username}/${chatUser}`)
         display_activeWindowMessage(message);
     })
 })
+.then(()=>{
+    if (('first_unread' in chat_userDiv.dataset)){
+        first_unread=chat_userDiv.dataset.first_unread;
+        const target=chat_messages_div.querySelector(`[data-message_id='${first_unread}']`);
+        highlightFirstUnread(target);
+        target.scrollIntoView({block:'center',behavior:'smooth'});
+        delete chat_userDiv.dataset.first_unread;
+    }
+});  
+
+
 }
 
 
@@ -382,5 +394,32 @@ function display_chat_messages(message){
        
     }
     
+}
+
+function highlightFirstUnread(element){
+    const parent=element.parentElement;
+    const startcolor=[181,181,181];
+    const endcolor=[104,103,103];
+    // const endcolor=[61, 59, 59];
+    const steps=10;
+    const red_change = (startcolor[0] - endcolor[0]) / steps;
+    const green_change = (startcolor[1] - endcolor[1]) / steps;
+    const blue_change = (startcolor[2] - endcolor[2]) / steps;
+    let stepcount=0;
+    let currentcolor=startcolor
+    var timer=setInterval(()=>{
+        currentcolor[0]=parseInt(currentcolor[0]-red_change);
+        currentcolor[1]=parseInt(currentcolor[1]-green_change);
+        currentcolor[2]=parseInt(currentcolor[2]-blue_change);
+        element.style.backgroundColor='rgb('+ currentcolor.toString()+')';
+        parent.style.backgroundColor='rgb('+ currentcolor.toString()+')';
+        stepcount+=1;
+        if (stepcount>=steps){
+            // element.style.backgroundColor='rgb('+ endcolor.toString()+')';
+            element.style.backgroundColor='rgb(61,59,59)';
+            parent.style.backgroundColor='rgb(104, 103, 103)';
+            clearInterval(timer);
+        }
+    },120);
 }
 
