@@ -90,55 +90,6 @@ function onEnterKey(chatSocket){
     }
 }
 
-function render_senderMessage(data){
-    if ( (data.sender!=username ) && !data.read )
-    {
-        fetch(`/chat/api/message/${data.id}/`,{
-            method:'PUT',
-            body:JSON.stringify({
-                read:true
-            })
-        })
-    }
-
- 
-    const chat_sender=document.createElement('div');
-    chat_sender.classList.add('message_container','sender','mt-3','row','justify-content-end','mr-1');
-    const message_div=document.createElement('div');
-    message_div.classList.add('message','d-inline-block','p-2');
-    message_div.dataset.message_id=data.id;
-    const message=document.createElement('span');
-    message.innerHTML=data.message;
-    chat_sender.append(message_div);
-    message_div.append(message)
-    return chat_sender
-}
-
-function render_receiverMessage(data){
-    if ( (data.sender!=username ) && !data.read )
-    {
-        fetch(`/chat/api/message/${data.id}/`,{
-            method:'PUT',
-            body:JSON.stringify({
-                read:true
-            })
-        })
-    }
-
-    const chat_receiver=document.createElement('div');
-    chat_receiver.classList.add('message_container','receiver','mt-3','mr-1');
-    const message_div=document.createElement('div');
-    message_div.dataset.message_id=data.id;
-    message_div.classList.add('message','d-inline-block','p-2');
-    const message=document.createElement('span');
-    message.innerHTML=data.message;
-    chat_receiver.append(message_div);
-    message_div.append(message)
-    return chat_receiver
-}
-
-
-
 function getUsers(){
     div=document.querySelector('#recent_chat_users');
     fetch(`/chat/api/${username}`,{
@@ -283,8 +234,13 @@ if(unread_count>15){
             target.scrollIntoView({block:'center',behavior:'smooth'});
             delete chat_userDiv.dataset.first_unread;
      }
-    });  
-    pageCounter+=end;
+    })
+    .then(()=>{
+        pageCounter+=end;
+        chat_messagesOnscroll(chatUser);
+    });
+       
+
 }
 
 else{//if unread is less than the paganition split number
@@ -310,9 +266,12 @@ else{//if unread is less than the paganition split number
                 lastChatMessage.scrollIntoView({block:'start',behavior:'smooth'});
             }
         }
-    }); 
+    })
+    .then(()=>{
+    pageCounter++;
+    chat_messagesOnscroll(chatUser);
+    })
 }
-pageCounter++;
 
 }
 
@@ -323,7 +282,7 @@ function display_activeWindowMessage(data,){
     const receiver=receiver_div.innerHTML
     const chat_messages_div=document.querySelector('#chat_messages');
     if (data.sender==username && receiver==data.receiver){
-        var div=render_senderMessage(data);
+        let div=render_senderMessage(data);
         chat_messages_div.append(div);
         // div.scrollIntoView({block: "start",behavior: "smooth"});//works for when you enter text also, also when last message was your message
         if(enterKeyPress){
@@ -332,13 +291,56 @@ function display_activeWindowMessage(data,){
         }
     }
     else if (data.sender==receiver && username==data.receiver){
-        var div=render_receiverMessage(data);
+        let div=render_receiverMessage(data);
         chat_messages_div.append(div);
     }
     
 }
 
+function render_senderMessage(data){
+    if ( (data.sender!=username ) && !data.read )
+    {
+        fetch(`/chat/api/message/${data.id}/`,{
+            method:'PUT',
+            body:JSON.stringify({
+                read:true
+            })
+        })
+    }
+    const chat_sender=document.createElement('div');
+    chat_sender.classList.add('message_container','sender','mt-3','row','justify-content-end','mr-1');
+    const message_div=document.createElement('div');
+    message_div.classList.add('message','d-inline-block','p-2');
+    message_div.dataset.message_id=data.id;
+    const message=document.createElement('span');
+    message.innerHTML=data.message;
+    chat_sender.append(message_div);
+    message_div.append(message)
+    return chat_sender
+}
 
+function render_receiverMessage(data){
+    if ( (data.sender!=username ) && !data.read )
+    {
+        fetch(`/chat/api/message/${data.id}/`,{
+            method:'PUT',
+            body:JSON.stringify({
+                read:true
+            })
+        })
+    }
+
+    const chat_receiver=document.createElement('div');
+    chat_receiver.classList.add('message_container','receiver','mt-3','mr-1');
+    const message_div=document.createElement('div');
+    message_div.dataset.message_id=data.id;
+    message_div.classList.add('message','d-inline-block','p-2');
+    const message=document.createElement('span');
+    message.innerHTML=data.message;
+    chat_receiver.append(message_div);
+    message_div.append(message)
+    return chat_receiver
+}
 
 //makes the changes to the chats when onmessage form websocket
 function display_chat_Onmessages(message){
@@ -419,16 +421,48 @@ function display_chat_Onmessages(message){
     
 }
 
-function loadMoreMesssagesActiveWindow(){
+function loadPaginatedMessages(chatUser,chat_messages_div){
+let insertBeforeThisElement=chat_messages_div.firstElementChild;
+const receiver=document.querySelector('#chatting_with_user').innerHTML;
 fetch(`/chat/api/${username}/${chatUser}?start=${pageCounter}`)
 .then(response=>response.json())
 .then(messages=>{
-    messages.forEach(message=>{
-        display_activeWindowMessage(message);
-    });
+    if (messages.error!=null && messages.status==404)
+    {
+        alert('All messages are loaded');
+    }
+    else{
+        messages.forEach(message=>{
+            displayPaginatedMessages(receiver,message,chat_messages_div,insertBeforeThisElement);
+        });
+        pageCounter++;
+    }
 })
-pageCounter++;
 }
+
+function displayPaginatedMessages(receiver,message,chat_messages_div,insertBeforeThisElement){
+    if (message.sender==username && receiver==message.receiver){
+        let div=render_senderMessage(message);
+        if (!insertBeforeThisElement){
+            chat_messages_div.append(div)
+        }
+        else{
+            chat_messages_div.insertBefore(div,insertBeforeThisElement);
+        }
+    }
+    else if (message.sender==receiver && username==message.receiver){
+        let div=render_receiverMessage(message);
+        if (!insertBeforeThisElement){
+            chat_messages_div.append(div)
+        }
+        else{
+            chat_messages_div.insertBefore(div,insertBeforeThisElement);
+        }
+
+    }
+}
+
+
 
 function highlightFirstUnread(element){
     const parent=element.parentElement;
@@ -473,3 +507,11 @@ function getTime(date){
     return `${hour}:${min} ${ps}`;
 }
 
+function chat_messagesOnscroll(chatUser){
+    let chat_messages_div=document.querySelector('#chat_messages');
+    chat_messages_div.onscroll=()=>{
+        if(chat_messages_div.scrollTop==0){
+            loadPaginatedMessages(chatUser,chat_messages_div);
+        }
+    }
+}
