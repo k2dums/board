@@ -9,6 +9,7 @@ from django.http import JsonResponse
 from django.db import connection
 from django.db.models import Q
 import json
+from django.core.paginator import Paginator
 # Create your views here.
 def index_view(request):
     return render(request,'chat/index.html')
@@ -95,55 +96,57 @@ def load_recentChats_view(request,username):
     output=None
     with connection.cursor() as cursor:
         cursor.execute( ''' 
-select message_id as latestMessageId,username,latestMessagetable.user_id,message as latestMessageWithUser,timestamp,unread as unreadMessagesWithUser,first_unread as first_unread_messageID from 
-(
-select t.id as message_id,c.username,c.id as user_id,t.message,t.timestamp from chat_user as c
-join
-(Select t.withUser,m.message,m.id,m.timestamp from chat_message as m
-join(
-select withUser,max(latestMessage) as latestMessageBetweenUsers
-from (
-(select receiver_id as withUser ,max(timestamp) as latestMessage from chat_message where sender_id=%s group by receiver_id)
-UNION
-(select sender_id as withUser ,max(timestamp) as latestMessage from chat_message where receiver_id=%s group by sender_id)
-) as t group by t.withUser
-) as t
-on (t.withUser=m.receiver_id Or t.withUser=m.sender_id) and m.timestamp=t.latestMessageBetweenUsers
-where (m.receiver_id=%s or m.sender_id=%s)
-order by m.timestamp desc) as t
-on(t.withUser=c.id)
-) as latestMessageTable
-left JOIN
-(  
-select UnreadCountTable.user_id,UnreadCountTable.unread,FirstUnreadTable.first_unread from 
-(Select user_id,count(read) as unread from
-(
-select sender_id as user_id ,message,read from chat_message where receiver_id=%s
-) as t
-where read=false
-group by user_id) as UnreadCountTable
-JOIN
-(
-Select m.id as first_unread,InnerFirstUnreadTable.user_id from chat_message as m
-join(
-select user_id,min(timestamp) as first_unread
-from (select sender_id as user_id,message,read,timestamp from chat_message where receiver_id=%s) as t
-group by user_id
-) as InnerFirstUnreadTable
-on (InnerFirstUnreadTable.user_id=m.sender_id) and m.timestamp=InnerFirstUnreadTable.first_unread
-where (m.receiver_id=3)
-) as FirstUnreadTable
-on (UnreadCountTable.user_id=FirstUnreadTable.user_id)) as unreadTable
-on (latestMessageTable.user_id=unreadTable.user_id)
-order by timestamp desc;
-
-
-                        ''',
-[request.user.id,request.user.id,request.user.id,request.user.id,request.user.id,request.user.id,] )
-
+            Select message_id as latestMessageId,username,latestMessagetable.user_id,message as latestMessageWithUser,timestamp,unread as unreadMessagesWithUser,first_unread as first_unread_messageID from 
+            (
+            select t.id as message_id,c.username,c.id as user_id,t.message,t.timestamp from chat_user as c
+            join
+            (Select t.withUser,m.message,m.id,m.timestamp from chat_message as m
+            join(
+            select withUser,max(latestMessage) as latestMessageBetweenUsers
+            from (
+            (select receiver_id as withUser ,max(timestamp) as latestMessage from chat_message where sender_id=%s group by receiver_id)
+            UNION
+            (select sender_id as withUser ,max(timestamp) as latestMessage from chat_message where receiver_id=%s group by sender_id)
+            ) as t group by t.withUser
+            ) as t
+            on (t.withUser=m.receiver_id Or t.withUser=m.sender_id) and m.timestamp=t.latestMessageBetweenUsers
+            where (m.receiver_id=%s or m.sender_id=%s)
+            order by m.timestamp desc) as t
+            on(t.withUser=c.id)
+            ) as latestMessageTable
+            left JOIN
+            (  
+            select UnreadCountTable.user_id,UnreadCountTable.unread,FirstUnreadTable.first_unread from 
+            (Select user_id,count(read) as unread from
+            (
+            select sender_id as user_id ,message,read from chat_message where receiver_id=%s
+            ) as t
+            where read=false
+            group by user_id) as UnreadCountTable
+            JOIN
+            (
+            Select m.id as first_unread,InnerFirstUnreadTable.user_id from chat_message as m
+            join(
+            select user_id,min(timestamp) as first_unread
+            from (select sender_id as user_id,message,read,timestamp from chat_message where receiver_id=%s) as t
+            group by user_id
+            ) as InnerFirstUnreadTable
+            on (InnerFirstUnreadTable.user_id=m.sender_id) and m.timestamp=InnerFirstUnreadTable.first_unread
+            where (m.receiver_id=%s)
+            ) as FirstUnreadTable
+            on (UnreadCountTable.user_id=FirstUnreadTable.user_id)) as unreadTable
+            on (latestMessageTable.user_id=unreadTable.user_id)
+            order by timestamp desc;
+            ''',
+        [request.user.id,request.user.id,request.user.id,request.user.id,request.user.id,request.user.id,request.user.id] )
         row = cursor.fetchall()
         output=serialize_recent_chats(row)
+    p=Paginator(output,10)
+    if request.method=="GET":
+        number=request.GET.get('page',default=1)
+        page=p.page(number)
     return JsonResponse(output,safe=False)
+
 
 #Load the chat , populate the window with the messages with the user in focus
 def load_chat_messages_view(request,username,chatUser):
@@ -154,10 +157,36 @@ def load_chat_messages_view(request,username,chatUser):
     except User.DoesNotExist:
         return JsonResponse({'Error':'User Profile not found','status':404})
     #Load all the messages with the user
+    chat_messages=Message.objects.filter( Q(sender=request.user,receiver=user)| Q(receiver=request.user,sender=user))
+    chat_messages=chat_messages.order_by('-timestamp').all()
+    p=Paginator(chat_messages,15)
     if request.method=='GET':
-        chat_messages=Message.objects.filter( Q(sender=request.user,receiver=user)| Q(receiver=request.user,sender=user))
-        chat_messages=chat_messages.order_by('timestamp').all()
-        return JsonResponse([chat_message.serialize() for chat_message in chat_messages ],safe=False)
+        #chat_messages getting overwritten 
+        try:
+            chat_messages=[]
+            start=int(request.GET.get('start',default=1))
+            end=request.GET.get('end')
+            if start in p.page_range:
+                if end:
+                    end=int(end)
+                    if end!=start and end>start and end in p.page_range:
+                        for x in range(start,end+1):
+                            page=p.page(x)
+                            temp=[chat_message.serialize() for chat_message in page.object_list]
+                            temp.reverse()
+                            temp.extend(chat_messages)
+                            chat_messages=temp
+                else: #if end is invalid just give the page with the value start
+                    page=p.page(start)
+                    chat_messages=[chat_message.serialize() for chat_message in page.object_list]
+                    chat_messages.reverse()
+            else:#if start not in range
+                return JsonResponse({'error':'Pagination number not in range','status':404})
+        except Exception as e:
+            print(e)
+    return JsonResponse(chat_messages,safe=False)
+       
+    
 
 def serialize_recent_chats(rows):
     output=[]
