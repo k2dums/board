@@ -1,5 +1,5 @@
 let enterKeyPress=false;
-
+let pageCounter=1
 const wsUrl= 'ws://'+ window.location.host+ '/ws/chat/'+ user_id+ '/';
 let chatSocket=null;
 // let flag=false;
@@ -18,7 +18,7 @@ const openSocket=(wsUrl,waitTimer,waitSeed,multiplier)=>{
     chatSocket.onmessage=(e)=>{
         const data=JSON.parse(e.data)
         console.log('[RECEIVING]',data);
-        display_chat_messages(data);
+        display_chat_Onmessages(data);
     }
     
     chatSocket.onclose=()=>{
@@ -90,28 +90,6 @@ function onEnterKey(chatSocket){
     }
 }
 
-//function for displaying the message on the html element
-function display_activeWindowMessage(data,){
-    const receiver_div=document.querySelector('#chatting_with_user')
-    const receiver=receiver_div.innerHTML
-    const chat_messages_div=document.querySelector('#chat_messages');
-    if (data.sender==username && receiver==data.receiver){
-        var div=render_senderMessage(data);
-        chat_messages_div.append(div);
-        // div.scrollIntoView({block: "start",behavior: "smooth"});//works for when you enter text also, also when last message was your message
-        if(enterKeyPress){
-            div.scrollIntoView({block: "start",behavior: "smooth"});
-            enterKeyPress=false;
-        }
-    }
-    else if (data.sender==receiver && username==data.receiver){
-        var div=render_receiverMessage(data);
-        chat_messages_div.append(div);
-    }
-    
-}
-
-
 function render_senderMessage(data){
     if ( (data.sender!=username ) && !data.read )
     {
@@ -159,6 +137,8 @@ function render_receiverMessage(data){
     return chat_receiver
 }
 
+
+
 function getUsers(){
     div=document.querySelector('#recent_chat_users');
     fetch(`/chat/api/${username}`,{
@@ -177,6 +157,7 @@ function create_appendRecentChatUser(message,div){
 }
 
 
+//Creates the recent chat users on the left chatbox
 function create_recentChatUser(message){
     document.querySelector('#chatting_with_container').style.display='none';
     document.querySelector('#current_chat_input_container').style.display='none';
@@ -205,10 +186,6 @@ function create_recentChatUser(message){
     user_message_unread_wrapper.classList.add('user_message_unread_wrapper','row');
 
 
-   
-    
-
-    
     let user_message_container=document.createElement('div');
     user_message_container.classList.add('col','user_message_container','pr-1','pl-1');
 
@@ -260,30 +237,22 @@ function create_recentChatUser(message){
         chat_user.querySelector('.unread_count').classList.remove('d-none');
         chat_user.querySelector('.unread_count').innerHTML=message.unread.count;
         chat_user.dataset.first_unread=message.unread.first_unreadId;
+        chat_user.dataset.unread_count=message.unread.count;
     }
 
     return chat_user;
 }
 
-function getTime(date){
-    let temp=new Date(date);
-    let hour=temp.getHours();
-    let min=temp.getMinutes();
-    min=min.toString().padStart(2,'0');
-    let ps='am';
-    if (hour==0){
-        hour=12;
-    }
-    if (hour>12){
-        hour=hour-12;
-        ps='pm';
-    }
-    return `${hour}:${min} ${ps}`;
+
+
+//This is the right chatbox where the current user chats with another user
+function chatWithUser(chat_userDiv,chatUser,id){
+pageCounter=1;
+let unread_count=null;
+if ('unread_count' in chat_userDiv.dataset){
+    unread_count=chat_userDiv.dataset.unread_count;
 }
 
-
-function chatWithUser(chat_userDiv,chatUser,id){
-console.log(chat_userDiv)
 chat_userDiv.querySelector('.unread_count').classList.add('d-none');
 document.querySelector('#chatting_with_container').style.display='flex';
 document.querySelector('#current_chat_input_container').style.display='block';
@@ -294,31 +263,85 @@ let chatting_with_user=document.querySelector('#chatting_with_user')
 chatting_with_user.innerHTML=chatUser
 chatting_with_user.dataset.user_id=id
 chatting_with_user.dataset.username=chatUser
+//Pagination returns 15 objects per page
+let end=null;
+let start=pageCounter
+if(unread_count>15){
+    end=Math.ceil(unread_count/15);
+    fetch(`/chat/api/${username}/${chatUser}?start=${start}&end=${end}`)
+    .then(response=>response.json())
+    .then(messages=>{
+        console.log('ChatWithUser',messages);
+        messages.forEach(message=>{
+            display_activeWindowMessage(message);});
+        })
+    .then(()=>{
+        if (('first_unread' in chat_userDiv.dataset)){
+            first_unread=chat_userDiv.dataset.first_unread;
+            const target=chat_messages_div.querySelector(`[data-message_id='${first_unread}']`);
+            highlightFirstUnread(target);
+            target.scrollIntoView({block:'center',behavior:'smooth'});
+            delete chat_userDiv.dataset.first_unread;
+     }
+    });  
+    pageCounter+=end;
+}
 
-
-fetch(`/chat/api/${username}/${chatUser}`)
-.then(response=>response.json())
-.then(messages=>{
-    messages.forEach(message=>{
-        display_activeWindowMessage(message);
+else{//if unread is less than the paganition split number
+    fetch(`/chat/api/${username}/${chatUser}?start=${start}`)
+    .then(response=>response.json())
+    .then(messages=>{
+        console.log('ChatWithUser',messages);
+        messages.forEach(message=>{
+            display_activeWindowMessage(message);
+        });
     })
-})
-.then(()=>{
-    if (('first_unread' in chat_userDiv.dataset)){
-        first_unread=chat_userDiv.dataset.first_unread;
-        const target=chat_messages_div.querySelector(`[data-message_id='${first_unread}']`);
-        highlightFirstUnread(target);
-        target.scrollIntoView({block:'center',behavior:'smooth'});
-        delete chat_userDiv.dataset.first_unread;
-    }
-});  
-
+    .then(()=>{
+        if (('first_unread' in chat_userDiv.dataset)){
+            first_unread=chat_userDiv.dataset.first_unread;
+            const target=chat_messages_div.querySelector(`[data-message_id='${first_unread}']`);
+            highlightFirstUnread(target);
+            target.scrollIntoView({block:'center',behavior:'smooth'});
+            delete chat_userDiv.dataset.first_unread;
+        }
+        else{
+            lastChatMessage=chat_messages_div.lastElementChild;
+            if (lastChatMessage){
+                lastChatMessage.scrollIntoView({block:'start',behavior:'smooth'});
+            }
+        }
+    }); 
+}
+pageCounter++;
 
 }
 
 
-//makes the changes to the chats 
-function display_chat_messages(message){
+//function for displaying the message on the html element
+function display_activeWindowMessage(data,){
+    const receiver_div=document.querySelector('#chatting_with_user')
+    const receiver=receiver_div.innerHTML
+    const chat_messages_div=document.querySelector('#chat_messages');
+    if (data.sender==username && receiver==data.receiver){
+        var div=render_senderMessage(data);
+        chat_messages_div.append(div);
+        // div.scrollIntoView({block: "start",behavior: "smooth"});//works for when you enter text also, also when last message was your message
+        if(enterKeyPress){
+            div.scrollIntoView({block: "start",behavior: "smooth"});
+            enterKeyPress=false;
+        }
+    }
+    else if (data.sender==receiver && username==data.receiver){
+        var div=render_receiverMessage(data);
+        chat_messages_div.append(div);
+    }
+    
+}
+
+
+
+//makes the changes to the chats when onmessage form websocket
+function display_chat_Onmessages(message){
     let parentNode=document.querySelector("#recent_chat_users");
     let target=null;
     let firstChildElement=parentNode.firstElementChild;
@@ -357,6 +380,7 @@ function display_chat_messages(message){
                 if(target.dataset.user_id!=document.querySelector('#chatting_with_user').dataset.user_id){
                     target.querySelector('.unread_count').classList.remove('d-none');
                     target.querySelector('.unread_count').innerHTML=message.unread.count;
+                    target.dataset.unread_count=message.unread.count;
                     target.dataset.first_unread=message.unread.first_unreadId;
                 }
             }
@@ -379,7 +403,6 @@ function display_chat_messages(message){
 
     //checking to the active user and making changes to active window
     {
-        
         let chatting_user_id=null
         if(user_id==message.receiver_id){
             chatting_user_id=message.sender_id;
@@ -394,6 +417,17 @@ function display_chat_messages(message){
        
     }
     
+}
+
+function loadMoreMesssagesActiveWindow(){
+fetch(`/chat/api/${username}/${chatUser}?start=${pageCounter}`)
+.then(response=>response.json())
+.then(messages=>{
+    messages.forEach(message=>{
+        display_activeWindowMessage(message);
+    });
+})
+pageCounter++;
 }
 
 function highlightFirstUnread(element){
@@ -420,6 +454,22 @@ function highlightFirstUnread(element){
             parent.style.backgroundColor='rgb(104, 103, 103)';
             clearInterval(timer);
         }
-    },120);
+    },200);
+}
+
+function getTime(date){
+    let temp=new Date(date);
+    let hour=temp.getHours();
+    let min=temp.getMinutes();
+    min=min.toString().padStart(2,'0');
+    let ps='am';
+    if (hour==0){
+        hour=12;
+    }
+    if (hour>12){
+        hour=hour-12;
+        ps='pm';
+    }
+    return `${hour}:${min} ${ps}`;
 }
 
